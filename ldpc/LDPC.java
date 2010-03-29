@@ -1,4 +1,5 @@
 import java.util.Random;
+import java.util.Arrays;
 
 public class LDPC {
 	private SparseMatrix orig;
@@ -30,7 +31,7 @@ public class LDPC {
 		fill(rand, rRanks, cRanks);
 	}
 
-	private void fill(Random rand, int[] rowRanks, int[] colRanks) {
+	public void fill(Random rand, int[] rowRanks, int[] colRanks) {
 		if (rowRanks.length != n-k) throw new IllegalArgumentException();
 		if (colRanks.length != n) throw new IllegalArgumentException();
 		int totalRow = 0;
@@ -139,11 +140,13 @@ public class LDPC {
 	}
 
 	public static void main(String[] args) {
-		int nData = 4096;
+		int nData = 10240;
 		int nCheck = nData;
+		int d = 10;
 
 		int nTrials = 100;
 		int[] nNeeded = new int[nTrials];
+		int[] nUsed = new int[nTrials];
 		boolean[] avail = new boolean[nData + nCheck];
 		int[] availOrder = new int[nData + nCheck];
 
@@ -155,11 +158,21 @@ public class LDPC {
 			for (int j = 0; j < avail.length; j++) avail[j] = false;
 			for (int j = 0; j < availOrder.length; j++) availOrder[j] = j;
 			shuffle(rand, availOrder);
+			/*
 			LDPC code = new LDPC(nData + nCheck, nData);
 			code.fillConst(rand, 6, 3);
+			*/
+
+			LDPC code = new TornadoCode(rand, nData + nCheck, nData, d);
+
 			nNeeded[i] = -1;
+			nUsed[i] = 0;
 			for (int j = 0; j < avail.length; j++) {
-				if (avail[availOrder[j]]) continue;
+				if (avail[availOrder[j]]) {
+					continue;
+				} else {
+					nUsed[i]++;
+				}
 				avail[availOrder[j]] = true;
 				if (j < nData) continue;
 				if (code.simulateDecode(avail)) {
@@ -171,18 +184,37 @@ public class LDPC {
 			assert nNeeded[i] < nData + nCheck;
 		}
 		System.out.println();
-		int min = nData + nCheck;
-		int max = 0;
-		int mean = 0;
-		for (int i = 0; i < nTrials; i++) {
-			if (nNeeded[i] < min) min = nNeeded[i];
-			if (nNeeded[i] > max) max = nNeeded[i];
-			mean += nNeeded[i];
-		}
-		mean /= nTrials;
-		System.out.println("Sim complete.");
-		System.out.println("Min needed:  " + min + "\t" + (((double)min)/(nData+nCheck)));
-		System.out.println("Max needed:  " + max + "\t" + (((double)max)/(nData+nCheck)));
-		System.out.println("Mean needed: " + mean + "\t" + (((double)mean)/(nData+nCheck)));
+		System.out.println("Sim complete.\n");
+
+		Arrays.sort(nNeeded);
+		Arrays.sort(nUsed);
+
+		int min = nNeeded[0];
+		int max = nNeeded[nNeeded.length - 1];
+		int median = nNeeded[nNeeded.length / 2];
+		double mean = mean(nNeeded);
+
+		System.out.println("Min needed:\t" + min + "\t" + (((double)min)/(nData+nCheck)));
+		System.out.println("Max needed:\t" + max + "\t" + (((double)max)/(nData+nCheck)));
+		System.out.println("Median needed:\t" + median + "\t" + (((double)median)/(nData+nCheck)));
+		System.out.println("Mean needed:\t" + mean + "\t" + (((double)mean)/(nData+nCheck)));
+		System.out.println();
+		
+		min = nUsed[0];
+		max = nUsed[nUsed.length - 1];
+		median = nUsed[nUsed.length / 2];
+		mean = mean(nUsed);
+
+		System.out.println("Min used:\t" + min + "\t" + (((double)min)/(nData+nCheck)));
+		System.out.println("Max used:\t" + max + "\t" + (((double)max)/(nData+nCheck)));
+		System.out.println("Median used:\t" + median + "\t" + (((double)median)/(nData+nCheck)));
+		System.out.println("Mean used:\t" + mean + "\t" + (((double)mean)/(nData+nCheck)));
+	}
+
+	public static double mean(int[] a) {
+		double m = 0;
+		for (int i = 0; i < a.length; i++) m += a[i];
+		m /= (double)(a.length);
+		return m;
 	}
 }
