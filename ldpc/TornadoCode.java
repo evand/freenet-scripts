@@ -53,7 +53,7 @@ public class TornadoCode extends LDPC {
 			//var naming to match normal conventions:
 			//l_i = number of edges of left degree i
 			//L_i = number of left nodes of degree i
-			double L_i = nEdges * lambda_i / ((double)(i));
+			double L_i = ((double)(nEdges)) * lambda_i / ((double)(i));
 			lArray[i] = (int)(L_i + rem + 0.5);
 			//if (lArray[i] < 1) lArray[i] = 1;
 			if (lArray[i] + nTotal > nBlocks) lArray[i] = nBlocks - nTotal;
@@ -112,6 +112,7 @@ public class TornadoCode extends LDPC {
 		
 		int i;
 		for (i = maxDegree; i >= 3; i--) {
+		//for (i = maxDegree; i > 3; i--) {
 			assert nTotalEdges < nEdges;
 			assert nTotalNodes < nCheckBlocks;
 			assert i * (nCheckBlocks - nTotalNodes) >= (nEdges - nTotalEdges);
@@ -130,10 +131,12 @@ public class TornadoCode extends LDPC {
 			if (nTotalNodes >= nCheckBlocks) break;
 			if (nTotalEdges >= nEdges) break;
 		}
+
+		
 		if (nTotalNodes < nCheckBlocks || nTotalEdges < nEdges) {
 			assert nTotalNodes < nCheckBlocks && nTotalEdges < nEdges;
 			//assert nEdges - nTotalEdges >= 3 * (nCheckBlocks - nTotalNodes);
-			assert nEdges - nTotalEdges <= 4 * (nCheckBlocks - nTotalNodes);
+			//assert nEdges - nTotalEdges <= 4 * (nCheckBlocks - nTotalNodes);
 			int p4 = (nEdges - nTotalEdges) - 3 * (nCheckBlocks - nTotalNodes);
 			int p3 = nCheckBlocks - nTotalNodes - p4;
 			assert nTotalEdges + 3 * p3 + 4 * p4 == nEdges;
@@ -142,8 +145,19 @@ public class TornadoCode extends LDPC {
 			nTotalNodes += p3 + p4;
 			nTotalEdges += 3 * p3 + 4 * p4;
 			assert rArray[4] > 0;
-			assert rArray[3] > 0;
+			assert rArray[3] >= 0;
+			if (verbose) {
+				System.out.println("Adjusted deg 3 count by " + p3);
+				System.out.println("Adjusted deg 4 count by " + p4);
+			}
 		}
+		
+
+		/*
+		rArray[3] = nCheckBlocks - nTotalNodes;
+		nTotalNodes += rArray[3];
+		nTotalEdges += 3 * rArray[3];
+		*/
 
 		if (verbose) {
 			System.out.println("nCheckBlocks: " + nCheckBlocks);
