@@ -1,3 +1,4 @@
+import java.util.Iterator;
 import java.util.Random;
 import java.util.Arrays;
 
@@ -105,6 +106,10 @@ public class LDPC {
 	}
 
 	public boolean simulateDecode(boolean[] avail) {
+		return simulateDecode(avail, true);
+	}
+
+	public boolean simulateDecode(boolean[] avail, boolean requireAll) {
 		if (avail.length != n) throw new IllegalArgumentException();
 		int nAvail = 0;
 		for (int i = 0; i < avail.length; i++)
@@ -119,15 +124,14 @@ public class LDPC {
 			for (int i = 0; i < n-k; i++) {
 				SparseVector constraint = orig.rows[i];
 				int nHave = 0;
-				for (int j = 0; j < constraint.vals.length; j++) {
-					if (constraint.vals[j] == -1) continue;
-					if (avail[constraint.vals[j]]) nHave++;
+				for (Iterator<Integer> it = constraint.iterator(); it.hasNext();) {
+					if (avail[it.next()]) nHave++;
 				}
 				if (nHave == constraint.getRank() - 1) {
 					changed = true;
-					for (int j = 0; j < constraint.vals.length; j++) {
-						if (constraint.vals[j] == -1) continue;
-						avail[constraint.vals[j]] = true;
+					for (Iterator<Integer> it = constraint.iterator();
+							it.hasNext();) {
+						avail[it.next()] = true;
 					}
 				} else if (nHave < constraint.getRank() - 1) {
 					complete = false;
@@ -136,13 +140,17 @@ public class LDPC {
 		}
 
 		assert !complete || (nAvail >= k);
-		return complete;
+		if (requireAll) return complete;
+
+		//!requireAll: only worry about the data blocks
+		for (int i = n-k; i < n; i++) if (!avail[i]) return false;
+		return true;
 	}
 
 	public static void main(String[] args) {
-		int nData = 10240;
+		int nData = 20480;
 		int nCheck = nData;
-		int d = 10;
+		int d = 200;
 
 		int nTrials = 100;
 		int[] nNeeded = new int[nTrials];
